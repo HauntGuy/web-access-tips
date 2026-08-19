@@ -31,7 +31,12 @@ Probe, don't assume. In order:
    length only, never values: environment variables `BRIGHTDATA_API_KEY` and
    `ANCHOR_API_KEY`, or a key file the owner has staged for you. With a key
    and a shell, the direct REST APIs are your primary route (§2–§3) — prefer
-   them over any connector.
+   them over any connector. ⚠ **If you can run code but find NO Bright Data
+   key, do not silently settle for the connector tools:** ask the owner where
+   the key is staged (they keep one — often a key file in the same place as
+   the Anchor key, or an environment variable). Falling back to the connector
+   in a code-capable session trades a one-question fix for recurring
+   mid-session auth failures (§2b).
 2. **No shell, but you have Bright Data connector tools?** (`search_engine`,
    `scrape_as_markdown`, `web_data_*`, `scraping_browser_*`) — use those
    (§2b). Anchor has no equivalent connector; login-walled work needs a
@@ -67,6 +72,21 @@ Probe, don't assume. In order:
 
 ## 2. Bright Data — anything public
 
+⚠⚠ **THE ROUTING RULE, decided by ONE capability test — read this before
+anything else in this section. If you can write and run code, use the direct
+REST API with the API key (§2a) and do NOT use the Bright Data connector
+tools, even though they appear in your tool list and even though they work at
+first.** The connector's session auth silently expires in long-lived sessions
+while still showing as connected — calls that worked an hour ago start
+failing with confusing auth errors, and retrying the connector does not fix
+it. The REST API on the key never goes stale. This has been observed on every
+long-lived code-capable surface tested. If you have no key, ask the owner for
+it (§0 step 1) rather than defaulting to the connector. **The connector is
+for sessions that CANNOT run code** (§2b) — with one narrow exception: a
+sandboxed container that cannot reach Bright Data's browser websocket uses
+the connector's `scraping_browser_*` tools as its real-browser rung, in small
+doses (§2d).
+
 ### 2a. Search and pages (shell + API key)
 
 - **Search with parsed JSON, never raw HTML:** send a Google URL with
@@ -91,8 +111,18 @@ Probe, don't assume. In order:
   standing instruction, worth obeying: never hand-parse what Bright Data can
   parse for you.
 
-### 2b. The connector tools (no-shell surfaces)
+### 2b. The connector tools — ONLY for sessions that cannot run code
 
+(Plus the sandboxed real-browser exception in §2d. If you can run code, go
+back to the routing rule at the top of §2 — these tools are not for you.)
+
+- **The staleness disease, so you recognize it:** in a long-lived session the
+  connector's auth token quietly dies (~hourly) while the account's Settings
+  page still shows "connected" — the session's token is stale, not the
+  connection. The remedy is on the OWNER's side: claude.ai → Settings →
+  Connectors → the Bright Data connector → Reconnect (a silent token refresh;
+  no password, session untouched). Tell the owner that is what's needed
+  instead of retrying the failing call.
 - `scrape_as_markdown` returns a near-empty shell on SPAs. Escalate to
   `scraping_browser_navigate` + `scraping_browser_get_text` — this works on
   pages the plain scrape cannot render.
