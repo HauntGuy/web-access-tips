@@ -22,7 +22,9 @@ is mangled four ways — every newline collapsed into one paragraph; every
 `<zone>`, `<KEY>`, `<value>` simply vanish and instructions lose their
 substitution points; and the tail dropped while the tool still reports
 `truncated: false`. **`format: "html"` returns the file byte-faithfully** —
-newlines, placeholders and tail all intact. The same applies to ANY plain
+newlines, placeholders and tail all intact — **and pass a `max_chars` well
+above the tool's default** (this file has outgrown a 30,000-char default; ask
+for 120000). The same applies to ANY plain
 `.md` / `.txt` file you fetch through a scraper. Where you can fetch the raw
 URL directly (curl, a plain fetch tool), that is best of all. **Either way,
 check that what you received ENDS with the version line** — if it does not,
