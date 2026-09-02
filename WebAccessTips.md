@@ -10,7 +10,9 @@ the field, and it changes often.
 **How to refresh.** This file's master lives at
 `https://github.com/HauntGuy/web-access-tips` — fetch the latest any time from
 `https://raw.githubusercontent.com/HauntGuy/web-access-tips/main/WebAccessTips.md`.
-When the owner says "refresh web access," re-read it from that URL.
+When the owner says "refresh web access," re-read it from that URL. If a
+network policy blocks the raw URL, fetch it through Bright Data instead
+(§2a if you can run code, §2b otherwise).
 
 **This file contains no secrets, ever.** No keys, tokens, passphrases, or
 account details belong here — tips only. If you are asked to add something
@@ -30,17 +32,24 @@ Probe, don't assume. In order:
 1. **Can you run shell or code?** If yes, check for credentials — presence and
    length only, never values: environment variables `BRIGHTDATA_API_KEY` and
    `ANCHOR_API_KEY`, or a key file the owner has staged for you. With a key
-   and a shell, the direct REST APIs are your primary route (§2–§3) — prefer
-   them over any connector. ⚠ **If you can run code but find NO Bright Data
-   key, do not silently settle for the connector tools:** ask the owner where
-   the key is staged (they keep one — often a key file in the same place as
-   the Anchor key, or an environment variable). Falling back to the connector
-   in a code-capable session trades a one-question fix for recurring
-   mid-session auth failures (§2b).
-2. **No shell, but you have Bright Data connector tools?** (`search_engine`,
-   `scrape_as_markdown`, `web_data_*`, `scraping_browser_*`) — use those
-   (§2b). Anchor has no equivalent connector; login-walled work needs a
-   surface with code execution.
+   and a shell, the direct REST APIs are your primary route (§2a, §3b) —
+   faster, they keep bulk content out of the conversation, and they write to
+   disk. ⚠ **If you can run code but find NO key, ask the owner where it is
+   staged** rather than silently doing less; meanwhile the gateway tools below
+   already work.
+2. **Do you have the owner's GATEWAY tools?** Look for two sets:
+   **Bright Data Gateway** — `search`, `scrape_page`, `search_datasets`,
+   `fetch_feed`, `feed_snapshot`, `browser_page`, `account_status`; and
+   **Anchor Browser Gateway** — `open_site`, `read_page`, `run_code`,
+   `check_auth`, `screenshot`, `web_task`, `live_view`, `end_session`,
+   `sessions_status`. ⭐ **These are the owner's own servers and they are a
+   complete toolkit on their own: public search, pages, structured feeds, a
+   real remote browser, AND login-walled pages via persistent signed-in
+   profiles.** They work on every surface, including ones with no shell at
+   all. Read §2b and §3a. *(Historical note, in case you meet an old
+   instruction: it used to be true that login-walled work required a
+   code-capable surface. The Anchor gateway ended that — a session with only
+   connector tools can now do it.)*
 3. **Neither — but you can fetch URLs?** You can still read public pages and
    this file. Say plainly what you cannot do (bot-protected sites,
    login-walled sites, structured feeds) rather than silently returning less.
@@ -68,24 +77,34 @@ Probe, don't assume. In order:
   credentialed URLs (browser-connect failures print the full websocket URL,
   key included); proxy URLs and CDP URLs embed keys by design; the bash
   expansion `${var:-fallback}` prints the value when set (it is not a mask);
-  tool error logs can echo zone passwords. Never re-quote such output.
+  tool error logs can echo zone passwords; **a site's own auth or session
+  endpoint returns tokens by construction** — print its STATUS and at most one
+  whitelisted field (a username), never a raw body. Never re-quote such
+  output.
 
 ## 2. Bright Data — anything public
 
-⚠⚠ **THE ROUTING RULE, decided by ONE capability test — read this before
-anything else in this section. If you can write and run code, use the direct
-REST API with the API key (§2a) and do NOT use the Bright Data connector
-tools, even though they appear in your tool list and even though they work at
-first.** The connector's session auth silently expires in long-lived sessions
-while still showing as connected — calls that worked an hour ago start
-failing with confusing auth errors, and retrying the connector does not fix
-it. The REST API on the key never goes stale. This has been observed on every
-long-lived code-capable surface tested. If you have no key, ask the owner for
-it (§0 step 1) rather than defaulting to the connector. **The connector is
-for sessions that CANNOT run code** (§2b) — with one narrow exception: a
-sandboxed container that cannot reach Bright Data's browser websocket uses
-the connector's `scraping_browser_*` tools as its real-browser rung, in small
-doses (§2d).
+⚠⚠ **THE ROUTING RULE, and it turns on WHO RUNS THE SERVER — read this before
+anything else in this section.**
+
+- **If you can run code and have the API key: use the direct REST API (§2a).**
+  It is the primary route for code-capable sessions: faster, no tool-list
+  overhead, and it writes results to disk instead of into the conversation.
+- **The owner's OWN gateway connectors are always safe to use** (§2b), on any
+  surface, including code-capable ones for one-off work. They serve no OAuth,
+  so they have nothing that can expire.
+- 🔴 **Never fall back to a VENDOR's MCP connector** (a server run by the data
+  provider rather than by the owner). Vendor connector auth silently expires
+  in long-lived sessions while still showing as connected: calls that worked
+  an hour ago start failing with confusing auth errors, and retrying does not
+  fix it. ⚠ **A static token in the connector's URL does NOT buy immunity** —
+  if the server advertises OAuth metadata at all, a spec-compliant client
+  takes the OAuth path regardless of the URL token. **Immunity comes from the
+  server offering no OAuth metadata**, which only a server the owner controls
+  guarantees. If a vendor connector's tools appear in your list, treat them as
+  stale leftovers; if an API call errors, retry the API call, and if a gateway
+  call errors, retry the gateway call — never cross over to a vendor
+  connector.
 
 ### 2a. Search and pages (shell + API key)
 
@@ -102,7 +121,8 @@ doses (§2d).
   asset (an image, a .js file) from the same domain to surface the actual
   refusal text. Robots-policy refusals (error `brob`, or a fetch tool's
   ROBOTS_DISALLOWED) are permanent for that domain — that is the signal to
-  hand the job to a real-browser route (Anchor, if the owner's setup has it).
+  hand the job to a real-browser route (the Anchor gateway reaches domains
+  Bright Data refuses, whether or not a login is involved).
 - **PDFs and binaries: curl straight to a file.** Any helper that captures the
   response as shell text silently destroys binary content (NUL bytes vanish).
 - **Docs discovery:** `https://docs.brightdata.com/llms.txt` is a ~12 KB
@@ -111,38 +131,51 @@ doses (§2d).
   standing instruction, worth obeying: never hand-parse what Bright Data can
   parse for you.
 
-### 2b. The connector tools — ONLY for sessions that cannot run code
+### 2b. The owner's Bright Data Gateway tools — the whole public web, no shell required
 
-(Plus the sandboxed real-browser exception in §2d. If you can run code, go
-back to the routing rule at the top of §2 — these tools are not for you.)
+Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
+`feed_snapshot`, `browser_page`, `account_status`. The ladder within them:
+**`search` to discover → `scrape_page` for an ordinary page →
+`search_datasets` / `fetch_feed` FIRST for any well-known platform (§2c) →
+`browser_page` when a page comes back as a shell or a refused domain.**
 
-- **The staleness disease, so you recognize it:** in a long-lived session the
-  connector's auth token quietly dies (~hourly) while the account's Settings
-  page still shows "connected" — the session's token is stale, not the
-  connection. The remedy is on the OWNER's side: claude.ai → Settings →
-  Connectors → the Bright Data connector → Reconnect (a silent token refresh;
-  no password, session untouched). Tell the owner that is what's needed
-  instead of retrying the failing call.
-- `scrape_as_markdown` returns a near-empty shell on SPAs. Escalate to
-  `scraping_browser_navigate` + `scraping_browser_get_text` — this works on
-  pages the plain scrape cannot render.
-- **Schema quirk:** `scraping_browser_type_ref` / `click_ref` require BOTH
-  `ref` AND a human-readable `element` description; `ref` alone fails
-  validation with a confusing error.
-- **Oversized batch results** (over the tool-result cap) auto-save to a file
-  path — hand that path to a subagent with explicit slicing instructions
-  instead of reading it inline.
-- **Typing into a site's own search box** (via `type_ref`) is an excellent
-  way to enumerate a directory or prove what a portal does NOT contain.
+- **No staleness remedy is needed and none applies.** This server serves no
+  OAuth, so there is no token to expire and nothing for the owner to
+  "reconnect." If a gateway call fails, retry it; a transient tool-list flap
+  clears on its own or with a fresh session. ⚠ Do not tell the owner to go hit
+  a Reconnect button — that advice belongs to vendor connectors only.
+- **`scrape_page` returning a title-and-nav shell means the content is
+  JavaScript-built** — escalate to `browser_page`, do not report the page
+  empty. An explicitly EMPTY result is different: it means Bright Data refuses
+  that whole domain by policy, and no amount of escalating within Bright Data
+  helps. Send those to the Anchor gateway's browser (§3a).
+- **`browser_page` is one complete, self-contained visit** — open, navigate,
+  optionally run in-page JavaScript, read, close. There is no session between
+  calls and the remote browser is pinned to one domain. For anything
+  multi-step or interactive, use the Anchor gateway instead.
+- ⏱ **If `browser_page` text comes back thin, RAISE `wait_ms` before
+  diagnosing anything harder.** A real case: a hospital location-search page
+  returned 23 characters at 6000 ms and was written off as blocked; at
+  12000 ms it rendered completely — 60 results with addresses, hours and
+  phone numbers. It is the cheapest rung on the ladder and the one most often
+  skipped.
+- **Oversized results** that exceed the tool-result cap are saved to a file
+  path — hand that path onward with explicit slicing instructions rather than
+  reading it inline.
 
 ### 2c. Structured feeds — check before scraping any well-known site
 
-Purpose-built datasets (LinkedIn, Amazon, YouTube-with-transcripts, Reddit,
-and 1,700+ more) return cleaner data and dodge exactly the sites that fight
-scrapers hardest. Discover from the LIVE catalog
-(`GET https://api.brightdata.com/datasets/list`) — ids are opaque, never
-guess or hardcode them. Feeds bill per record (~$0.70/1,000; failed rows bill
-too — pass `include_errors=true` and inspect failures).
+Purpose-built datasets (LinkedIn profiles/companies/jobs, Indeed, Glassdoor,
+Amazon, Walmart, eBay, Zillow, Google Maps, Crunchbase, Reddit, Instagram,
+TikTok, X, and YouTube — whose feed returns the FULL video transcript — plus
+1,700+ more) return cleaner data and dodge exactly the sites that fight
+scrapers hardest. **Reach for a feed whenever a question merely TOUCHES one of
+those platforms, even if nobody said the word "scrape."** Discover from the
+LIVE catalog (`GET https://api.brightdata.com/datasets/list` with code, or
+`search_datasets` through the gateway) — ids are opaque, never guess or
+hardcode them. Feeds bill per record (~$0.70/1,000; failed rows bill too —
+pass `include_errors=true` and inspect failures). Some feeds are slow (a
+YouTube video runs ~2.5 minutes), so expect to go async.
 
 ### 2d. Proxy and browser modes — where code executes decides everything
 
@@ -151,58 +184,104 @@ too — pass `include_errors=true` and inspect failures).
   the API key at run time (`GET /zone/passwords?zone=<zone>`); never freeze a
   composed proxy URL into a secret — frozen credentials die silently at
   rotation.
-- **Cloud agent containers cannot reach the superproxy at all** (their egress
-  resets TLS on those ports; no setting fixes it). Proxy mode and the CDP
-  Browser API work from local machines and CI runners (GitHub Actions), not
-  from cloud sandboxes — in cloud, the connector's `scraping_browser_*`
-  tools are the real-browser rung.
+- **Cloud agent containers cannot reach the superproxy at all.** Proxy mode
+  and the direct CDP Browser API work from local machines and CI runners
+  (GitHub Actions), not from cloud sandboxes. ⚠ **Judge this by whether the
+  connection SUCCEEDS, never by which error it throws** — the same block has
+  appeared as a TLS reset mid-handshake and, on another day, as a bare connect
+  timeout with nothing answering. No setting fixes it. **In a cloud sandbox
+  the real-browser rung is the gateway's `browser_page`** (§2b), which is
+  brokered server-side, so the container's own egress is irrelevant.
 - **Probing egress correctly:** curl printing `000` does NOT mean blocked.
   The authoritative signal is the proxy's CONNECT response (`curl -v`):
   `403` on CONNECT = policy-blocked; `200 Connection Established` = allowed
-  (even if the request then fails for other reasons).
+  (even if the request then fails for other reasons). A bare unauthenticated
+  GET to an API host returning **HTTP 401 is a "path is open" signal**, not a
+  failure — useful for probing egress without a key.
 
 ## 3. Anchor Browser — pages behind the owner's logins
 
-The last rung: slow, metered browser time. Public data never goes here.
+The last rung: slow, metered browser time. Public data never goes here. Two
+doors, and which one you use depends on what you can do.
 
-- **Session creation:** REST `POST /v1/sessions` with header `anchor-api-key`.
+### 3a. The Anchor Gateway tools — the interactive door, any surface
+
+Tools: `open_site`, `read_page`, `run_code`, `check_auth`, `screenshot`,
+`web_task`, `live_view`, `end_session`, `sessions_status`. Flow:
+**`open_site` (naming an existing signed-in profile) → `check_auth` →
+`read_page` or `run_code` → `end_session`**, with `sessions_status` as the
+orphan check.
+
+- ⭐ **REUSE a signed-in profile; never log into one that already works.** An
+  unnecessary login can end in a password reset that logs the owner out
+  everywhere. Verify sign-in from `check_auth` (cookie NAMES), never from how
+  the page looks.
+- 🔴 **NEVER run a credential login through `run_code`** — the code string
+  would put the owner's password into the conversation transcript. When a
+  login is genuinely needed, hand the owner a `live_view` link and let them
+  type it themselves.
+- **`end_session` always, even on failure** — a profile saves its cookies only
+  on a clean end.
+- **Profile names are DERIVED, not invented:** the site's domain, lowercased,
+  dots removed, TLD kept (`consumerreports.org` → `consumerreportsorg`).
+  Anchor rejects dotted names (HTTP 400). Because the name is derivable, a
+  brand-new session can compose it and find a profile some earlier session
+  warmed — so **before ever asking for a login, open the derived name and
+  check the cookie jar.**
+
+### 3b. The REST API — the scripted-batch door (shell + key)
+
+- **Session creation:** `POST /v1/sessions` with header `anchor-api-key`.
   ⚠ `captcha_solver` REQUIRES an active proxy configuration — a proxyless
   session with the solver on is rejected (HTTP 400). ⚠ The solver only works
-  in HEADFUL sessions (`headless: false`); headless bounces silently back to
-  login forms.
+  in HEADFUL sessions; **a named profile cannot be headless at all** (HTTP 400
+  "Failed to run browser").
 - **Attaching to a running session:** `GET /v1/sessions/{id}` does NOT return
   the CDP URL. Compose `wss://connect.anchorbrowser.io?apiKey=<KEY>&sessionId=<id>`
   in memory at the moment of use. It embeds the key — never print, store, or
   commit it, and never re-quote a connect-failure error (it echoes the URL).
-- **End sessions cleanly** (`DELETE /v1/sessions/{id}`) — profiles persist
-  their cookies only on a clean end. Wrap every session in try/finally
-  cleanup; done properly this survives even host-level SIGTERM kills, so a
-  timed-out script still leaves zero orphaned sessions.
-- **Profiles pin their browser fingerprint** across sessions; a sticky IP can
-  only be set at profile creation, never added later. Never use Anchor's
-  identity/auto-login feature — it fails on CAPTCHA-gated sites (HTTP 422)
-  no matter how configured; script logins yourself.
-- **The live view has no address bar** — a human watching cannot navigate;
-  the driving script must do all navigation (including opening any emailed
-  link INSIDE the session — see below).
+- **`POST /v1/tools/execute-code?sessionId=` runs arbitrary Playwright inside
+  a named session over plain HTTPS** — Anchor is fully drivable with no CDP.
+  ⚠⚠ **TRAP: `/v1/tools/fetch/webpage` ACCEPTS `?sessionId=` and IGNORES it**,
+  spinning its own anonymous browser — so using it to read a logged-in page
+  returns the ANONYMOUS page with HTTP 200, a silent auth-stub failure.
+
+### 3c. Login-wall judgment — applies through either door
+
 - **Authenticate on SESSION STATE (the cookie jar), never on rendered
   content.** Sites restyle headers and greetings without notice;
-  content-based auth tests break repeatedly. The durable signal is the
-  presence of the site's auth cookies.
+  content-based auth tests break repeatedly.
 - **Login-wall trust is all-or-nothing.** While a stored login cookie lives,
   fetches meet no challenge at all. The moment a real login is required, the
   full CAPTCHA wall returns — regardless of how warm or old the profile is.
   On hard-CAPTCHA sites the solver loses the hard interactive classes, so:
   **capture what you need while the cookie is alive; never trigger an
   avoidable login; treat a dead cookie as a human-recovery event.** The one
-  proven recovery on a hard-CAPTCHA site is a password reset with the
-  emailed link opened INSIDE the profile's own browser (paste the URL and
-  navigate the session to it — clicking it in the human's own mail app seeds
-  the wrong browser).
+  proven recovery is a password reset with the emailed link opened INSIDE the
+  profile's own browser (paste the URL and navigate the session to it —
+  clicking it in the human's own mail app seeds the wrong browser).
+- **ONE scripted login attempt, then stop and offer the live view.** More
+  attempts cost minutes, risk a lockout, and change nothing.
+- ⚠ **Do not be fooled by what a failure LOOKS like.** A CAPTCHA that gets
+  SOLVED does not mean access — a site can accept the solve and still refuse.
+  And **a "we don't recognize that sign in" message is NOT proof the password
+  is wrong**: sites soft-refuse an untrusted browser using the wording of a
+  credential error. Before touching a stored credential, ask the owner to try
+  it in their own browser.
+- **Filling the visible form is often the WRONG way in.** If the login is a
+  JavaScript widget, a scripted fill can submit and set no auth cookie at all.
+  Look for the login endpoint the page itself calls and POST to it FROM INSIDE
+  THE PAGE (`fetch` with credentials included) — an in-page call inherits the
+  page's own cookies, including any bot-defense clearance cookie.
 - A failed login attempt does NOT damage a stored cookie — retrying a fetch
   afterward is safe.
 - Never click, nudge, or "help" a CAPTCHA widget mid-solve — hands off; it
   measurably worsens the solve.
+- **Profiles pin their browser fingerprint** across sessions; a sticky IP can
+  only be set at profile creation, never added later. Never use Anchor's
+  identity/auto-login feature — it fails on CAPTCHA-gated sites (HTTP 422).
+- **The live view has no address bar** — a human watching cannot navigate; the
+  driving side must do all navigation.
 - **Docs:** the ordinary docs pages are JS shells and their `.md` twins
   return the literal string "null". Working routes: `llms-full.txt` (~866 KB
   — grep it) and `openapi.yaml` (~313 KB). Real fields exist in neither —
@@ -213,16 +292,42 @@ The last rung: slow, metered browser time. Public data never goes here.
 
 - **Go under the UI first.** When a page gates, hides, or ignores content the
   session should be able to see, the data is usually already crossing the
-  wire. Attach network response listeners BEFORE navigation, then load and
-  **interact** — a no-XHR initial load does NOT mean a no-XHR site (many
-  first paints are server-rendered; the endpoints reveal themselves on the
-  first interaction). Find the page's own JSON endpoint and call it directly:
-  the page context's request facility rides the same cookie jar the page
-  uses.
+  wire. Find the page's own JSON endpoint and call it directly: the page
+  context's request facility rides the same cookie jar the page uses.
+- ⭐⭐ **DISCOVERING THAT ENDPOINT WITHOUT A NETWORK LISTENER — the trick for
+  one-shot renders.** The classic method is to attach network listeners BEFORE
+  navigation, then load and **interact** (a no-XHR initial load does NOT mean
+  a no-XHR site; many first paints are server-rendered and the endpoints
+  reveal themselves on the first interaction). But a one-shot render tool runs
+  its JavaScript AFTER load, too late to attach anything. **You do not need
+  to: the Performance API retains every URL the page already fetched.** One
+  post-load call —
+  `performance.getEntriesByType('resource').map(e => e.name)`, filtered to
+  drop `.js/.css/.png/.woff2` and friends — hands you the full request list,
+  JSON endpoints included. Make this your default first move on any "renders
+  in a browser, empty when scraped" listing page.
+- 🎯 **Vendor meta tags name the TECHNOLOGY, not the endpoint.** A page may
+  advertise its search vendor, an org id, and a public client-side key in its
+  `<head>` — tempting you toward that vendor's public API. The page often
+  calls the SITE'S OWN proxy instead, on the site's domain, with a short-lived
+  token from a companion token endpoint. Let the resource list settle it
+  rather than reasoning from the vendor's name.
+- **Read the JSON's real key names before parsing.** Return the top-level keys
+  first: fields are often underscore-prefixed (`_locations`,
+  `_total_locations`, `_distance`) and the obvious guesses silently return
+  empty arrays that look like "no results."
 - **Capture once, replay many.** Once an endpoint is captured, parameter
-  variants cost one session, not one session each. **Replay read endpoints
-  only** — never replay anything whose name implies mutation (add/save/
-  update/delete) with modified parameters.
+  variants cost one call, not one session each: a `per_page` parameter lifts a
+  10-row UI cap to the full set in ONE request, and an `origin`/location
+  parameter is usually live (echoed back in the response), so the same
+  endpoint answers "nearest to anywhere." **Replay read endpoints only** —
+  never replay anything whose name implies mutation (add/save/update/delete)
+  with modified parameters.
+- ⚠ **Distances from a location API are usually STRAIGHT-LINE.** They can rank
+  results badly wherever road geometry dominates — a point 22 straight-line
+  miles away over back roads can be a longer drive than one 37 miles away by
+  highway. Say which you are reporting; if the answer is about travel, it
+  needs drive time, not radius.
 - **Check for embedded bootstrap data first** (30 seconds):
   `window.__NEXT_DATA__` / `window.__INITIAL_STATE__` often carry the whole
   dataset or the API route map.
@@ -252,6 +357,14 @@ The last rung: slow, metered browser time. Public data never goes here.
   parameter-flip replays of the backing endpoint distinguish "curated subset"
   from "radius filter" from "pagination"; the UI looks identical in all
   cases.
+- **A Cloudflare interstitial is not a failure — wait it out, and prefer a
+  profile session.** A profile-backed browser session runs the full stealth
+  stack and clears interstitials an anonymous session cannot. Then **poll the
+  read WITHOUT re-passing the URL** — re-passing it re-navigates and restarts
+  the challenge. Expect ~3–4 polls: 0 chars → a short "performing security
+  verification" → correct title with no body → full text. Never conclude
+  "empty" before the fourth poll. *(Measured on one Cloudflare-fronted site;
+  treat the stealth-stack generalization as promising rather than proven.)*
 - **Forms:** target fields by id (never "the first textarea"); HTML5 date
   inputs require `YYYY-MM-DD` (other formats fail silently); leave
   derived/alternative fields blank when the primary ones are filled; prefer
@@ -285,17 +398,19 @@ The last rung: slow, metered browser time. Public data never goes here.
   Python may require `--break-system-packages`. Never run a browser-download
   step (e.g. "playwright install") in a managed container — a browser is
   already provided, or the remote browser makes a local one unnecessary.
-- **Default shell timeouts can be short (~2 minutes on some surfaces).** A
-  multi-step browser job must be launched with an explicit longer timeout —
-  and its cleanup designed to fire on SIGTERM, because the timeout kill is
-  the most likely failure.
+- **Default shell timeouts can be short (~2 minutes on some surfaces), but
+  that is usually a DEFAULT, not a cap** — pass an explicit longer timeout
+  (ceilings of ~10 minutes have been measured where the default was 2). Design
+  cleanup to fire on SIGTERM, because the timeout kill is the likeliest
+  failure.
 - **Egress varies per surface and per environment.** Do not generalize
   reachability from one container to another; probe (see §2d for reading the
   CONNECT response correctly).
-- **Connector/MCP sessions can go stale in long-lived sessions while still
-  looking connected.** Where a shell and an API key exist, prefer the direct
-  REST APIs; treat connectors as the route for surfaces that have nothing
-  else.
+- ⚠ **Help-center sites (Intercom-style and similar) defeat plain scraping in
+  a specific way:** a raw markdown scrape can return tens of thousands of
+  characters of site NAVIGATION with the article body truncated away. Prefer a
+  prompt-directed fetch tool for those, or a real browser, rather than
+  trusting the character count as evidence you got the article.
 
 ## 6. Maintenance
 
@@ -303,3 +418,9 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v1.2 — 2026-09-02. Corrects §0, §2 and §3 for the owner's two gateway
+connectors (v1.1 predated them and described retired vendor tools); adds the
+Performance-API endpoint-discovery trick, the raise-wait_ms-first rule, the
+underscore-key and straight-line-distance traps, the Cloudflare poll ladder,
+the credential-shaped-refusal warning, and the help-center nav-noise gotcha.*
