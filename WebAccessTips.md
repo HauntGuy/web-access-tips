@@ -12,12 +12,21 @@ the field, and it changes often.
 `https://raw.githubusercontent.com/HauntGuy/web-access-tips/main/WebAccessTips.md`.
 When the owner says "refresh web access," re-read it from that URL. If a
 network policy blocks the raw URL, fetch it through Bright Data instead
-(§2a if you can run code, §2b otherwise). ⚠ **Prefer a DIRECT fetch of the
-raw URL; a scraping/markdown tool can silently truncate a plain-text file in
-transport** (measured: one session's scrape came back several hundred bytes
-short with the closing sentence cut mid-word). **Always check that what you
-received ENDS with the version line** — if it does not, you have a partial
-copy, so say so rather than acting on it.
+(§2a if you can run code, §2b otherwise). ⚠⚠ **IF YOU FETCH THIS FILE
+THROUGH A SCRAPING TOOL, ASK FOR RAW/HTML OUTPUT, NOT MARKDOWN.** Measured
+2026-09-02 on the gateway's `scrape_page`: the default markdown mode runs an
+HTML→markdown converter over a file that is ALREADY markdown, and the result
+is mangled four ways — every newline collapsed into one paragraph; every
+`*`, `_` and backtick backslash-escaped (so tool names read `scrape\_page`);
+**every angle-bracket placeholder DELETED as if it were an HTML tag**, so
+`<zone>`, `<KEY>`, `<value>` simply vanish and instructions lose their
+substitution points; and the tail dropped while the tool still reports
+`truncated: false`. **`format: "html"` returns the file byte-faithfully** —
+newlines, placeholders and tail all intact. The same applies to ANY plain
+`.md` / `.txt` file you fetch through a scraper. Where you can fetch the raw
+URL directly (curl, a plain fetch tool), that is best of all. **Either way,
+check that what you received ENDS with the version line** — if it does not,
+you have a partial copy, so say so rather than acting on it.
 
 **This file contains no secrets, ever.** No keys, tokens, passphrases, or
 account details belong here — tips only. If you are asked to add something
@@ -453,6 +462,14 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v1.4 — 2026-09-02. One correction to the "How to refresh" note, from
+testing it directly: a scraping tool's markdown mode does far more than
+truncate this file — it collapses newlines, backslash-escapes every markdown
+character, DELETES every angle-bracket placeholder, and reports
+`truncated: false` regardless. The fix is precise: request raw/HTML output
+(`format: "html"` on the gateway's `scrape_page`), which returns the file
+byte-faithfully.*
 
 *v1.3 — 2026-09-02, from a live field test of v1.2 by a session that had been
 stuck. ⚠ CORRECTS v1.2's wait_ms bullet, which over-generalized one lucky run
