@@ -12,7 +12,12 @@ the field, and it changes often.
 `https://raw.githubusercontent.com/HauntGuy/web-access-tips/main/WebAccessTips.md`.
 When the owner says "refresh web access," re-read it from that URL. If a
 network policy blocks the raw URL, fetch it through Bright Data instead
-(§2a if you can run code, §2b otherwise).
+(§2a if you can run code, §2b otherwise). ⚠ **Prefer a DIRECT fetch of the
+raw URL; a scraping/markdown tool can silently truncate a plain-text file in
+transport** (measured: one session's scrape came back several hundred bytes
+short with the closing sentence cut mid-word). **Always check that what you
+received ENDS with the version line** — if it does not, you have a partial
+copy, so say so rather than acting on it.
 
 **This file contains no secrets, ever.** No keys, tokens, passphrases, or
 account details belong here — tips only. If you are asked to add something
@@ -152,13 +157,17 @@ Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
 - **`browser_page` is one complete, self-contained visit** — open, navigate,
   optionally run in-page JavaScript, read, close. There is no session between
   calls and the remote browser is pinned to one domain. For anything
-  multi-step or interactive, use the Anchor gateway instead.
-- ⏱ **If `browser_page` text comes back thin, RAISE `wait_ms` before
-  diagnosing anything harder.** A real case: a hospital location-search page
-  returned 23 characters at 6000 ms and was written off as blocked; at
-  12000 ms it rendered completely — 60 results with addresses, hours and
-  phone numbers. It is the cheapest rung on the ladder and the one most often
-  skipped.
+  multi-step or interactive, use the Anchor gateway instead. ⭐ **"Pinned to
+  one domain" is NOT a reason to avoid in-page fetches — the opposite:
+  fetching the site's OWN backend API from inside the js payload is the
+  intended way to reach it**, because a same-origin call inherits the page's
+  cookies and any bot-defense clearance (§4).
+- ⏱ **If `browser_page` text comes back thin, raising `wait_ms` is the
+  cheapest thing to try — but do NOT treat it as the diagnosis.** ⚠ Measured
+  the hard way on one hospital location-search page: it rendered completely
+  for one session at 12000 ms and returned the same 23 characters for another
+  session at the same 12000 ms. Timing is variable and proves nothing on its
+  own. **The reliable diagnosis is the resource count — see §4.**
 - **Oversized results** that exceed the tool-result cap are saved to a file
   path — hand that path onward with explicit slicing instructions rather than
   reading it inline.
@@ -306,6 +315,32 @@ orphan check.
   drop `.js/.css/.png/.woff2` and friends — hands you the full request list,
   JSON endpoints included. Make this your default first move on any "renders
   in a browser, empty when scraped" listing page.
+- ⭐⭐ **AND THE RESOURCE COUNT IS ITSELF THE DIAGNOSIS — this is the tip that
+  tells you whether waiting longer can EVER help.** Read it before you reach
+  for a bigger `wait_ms`:
+  **a near-EMPTY resource list (a beacon or two, no API calls) means the app
+  never issued its query at all — more waiting will never help, and the fault
+  is in the URL or its parameters.**
+  **A FULL resource list with a bare DOM is the genuine timing case** — that
+  is when raising the wait is the right move.
+  Field-proven: a session stuck on a listing page found exactly ONE non-asset
+  entry (an analytics beacon), which reframed the problem from "render too
+  slow" to "wrong query parameter" — changing the query string made the app
+  run and the endpoints appear immediately. Without this check it had already
+  burned a doubled wait on a page that was never going to render.
+- 🔑 **Do the token fetch and the API call in the SAME in-page block.** When a
+  site's API needs a short-lived token from a companion endpoint, fetch the
+  token and call the API inside ONE js payload on a same-origin page. Three
+  reasons: the token stays fresh (two round trips can race its expiry), the
+  calls inherit the page's cookies, and **the token never enters your
+  transcript** — which matters, because tokens are secrets you must not print.
+- 📋 **A captured search URL's `facet=` parameters are a free list of the
+  filterable field names.** Before guessing filter syntax, read them: a
+  request carrying `facet=location_type.name&facet=specialties.specialty`
+  is telling you `filter=location_type.name:<value>` is valid. ⚠ And prefer a
+  precise filter to a fuzzy text query — a free-text search can sweep in
+  loosely-related records (one such search returned 60 rows where the correct
+  type filter returned the 46 that actually matched).
 - 🎯 **Vendor meta tags name the TECHNOLOGY, not the endpoint.** A page may
   advertise its search vendor, an org id, and a public client-side key in its
   `<head>` — tempting you toward that vendor's public API. The page often
@@ -419,8 +454,19 @@ owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
 
-*v1.2 — 2026-09-02. Corrects §0, §2 and §3 for the owner's two gateway
-connectors (v1.1 predated them and described retired vendor tools); adds the
-Performance-API endpoint-discovery trick, the raise-wait_ms-first rule, the
-underscore-key and straight-line-distance traps, the Cloudflare poll ladder,
-the credential-shaped-refusal warning, and the help-center nav-noise gotcha.*
+*v1.3 — 2026-09-02, from a live field test of v1.2 by a session that had been
+stuck. ⚠ CORRECTS v1.2's wait_ms bullet, which over-generalized one lucky run
+into a diagnosis: the same page rendered at 12000 ms for one session and
+returned 23 characters for another at the same wait. The reliable test is the
+RESOURCE COUNT (§4) — near-empty means the query never fired and waiting
+cannot help. Also adds: the token-and-API-in-one-in-page-block rule, `facet=`
+parameters as a free list of filterable fields, prefer-a-precise-filter over
+fuzzy text search, the same-origin in-page fetch clarification in §2b, and a
+warning to verify this file's own version line after fetching it, since a
+scraping tool can truncate it in transport.*
+
+*v1.2 — 2026-09-02. Corrected §0, §2 and §3 for the owner's two gateway
+connectors (v1.1 predated them and described retired vendor tools); added the
+Performance-API endpoint-discovery trick, the underscore-key and
+straight-line-distance traps, the Cloudflare poll ladder, the
+credential-shaped-refusal warning, and the help-center nav-noise gotcha.*
