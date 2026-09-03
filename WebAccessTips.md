@@ -156,6 +156,11 @@ anything else in this section.**
   ROBOTS_DISALLOWED) are permanent for that domain — that is the signal to
   hand the job to a real-browser route (the Anchor Browser Gateway reaches domains
   Bright Data refuses, whether or not a login is involved).
+- **Google's own hosts are refused too — including the favicon service**
+  (`google.com/s2/favicons`, which redirects to `gstatic.com/faviconV2`).
+  Search still works because it rides the SERP mode; a plain fetch of a
+  Google endpoint gets the refusal. Check a favicon-service result through
+  the Anchor Browser Gateway's browser instead (measured 2026-09-03).
 - **PDFs and binaries: curl straight to a file.** Any helper that captures the
   response as shell text silently destroys binary content (NUL bytes vanish).
 - **Docs discovery:** `https://docs.brightdata.com/llms.txt` is a ~12 KB
@@ -182,6 +187,11 @@ Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
   empty. An explicitly EMPTY result is different: it means Bright Data refuses
   that whole domain by policy, and no amount of escalating within Bright Data
   helps. Send those to the Anchor Browser Gateway's browser (§3a).
+- ⚠ **`scrape_page`'s "looks like a SHELL" note is a character-count
+  heuristic, and it false-positives on genuinely tiny pages** (example.com,
+  183 characters, complete: heading, sentence, link — measured 2026-09-03).
+  Judge by whether the heading AND a body sentence came back, not by the
+  note; escalate only when the body is near-empty.
 - **`browser_page` is one complete, self-contained visit** — open, navigate,
   optionally run in-page JavaScript, read, close. There is no session between
   calls and the remote browser is pinned to one domain. For anything
@@ -481,6 +491,13 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v1.6 — 2026-09-03 (later the same day), two measured refusal-side lessons
+from the owner's connector-icon work: Bright Data refuses Google's own hosts,
+the favicon service included — probe those through the Anchor Browser
+Gateway's browser instead; and `scrape_page`'s "looks like a SHELL" note is a
+character-count heuristic that fires on genuinely tiny complete pages, so
+judge by content, not by the note.*
 
 *v1.5 — 2026-09-03, from a session that followed the owner's standing
 web-access prompt cold and reported back. The method itself worked; these close
