@@ -64,7 +64,7 @@ Probe, don't assume. In order:
    profiles.** They work on every surface, including ones with no shell at
    all. Read §2b and §3a. *(Historical note, in case you meet an old
    instruction: it used to be true that login-walled work required a
-   code-capable surface. The Anchor gateway ended that — a session with only
+   code-capable surface. The Anchor Browser Gateway ended that — a session with only
    connector tools can now do it.)*
    ⚠⚠ **ABSENCE FROM YOUR TOOL LIST IS NOT ABSENCE FROM THE ACCOUNT.** On
    surfaces where tools load ON DEMAND rather than appearing up front, the
@@ -82,7 +82,7 @@ Probe, don't assume. In order:
    connector named "Anchor Gateway" while the real one was named "Anchor Browser
    Gateway", and it came close to refusing the very connector it needed. A
    server whose tools are exactly those nine names IS the owner's Anchor
-   gateway, whatever the label says.
+   Browser Gateway, whatever the label says.
 3. **Neither — but you can fetch URLs?** You can still read public pages and
    this file. Say plainly what you cannot do (bot-protected sites,
    login-walled sites, structured feeds) rather than silently returning less.
@@ -154,7 +154,7 @@ anything else in this section.**
   asset (an image, a .js file) from the same domain to surface the actual
   refusal text. Robots-policy refusals (error `brob`, or a fetch tool's
   ROBOTS_DISALLOWED) are permanent for that domain — that is the signal to
-  hand the job to a real-browser route (the Anchor gateway reaches domains
+  hand the job to a real-browser route (the Anchor Browser Gateway reaches domains
   Bright Data refuses, whether or not a login is involved).
 - **PDFs and binaries: curl straight to a file.** Any helper that captures the
   response as shell text silently destroys binary content (NUL bytes vanish).
@@ -181,11 +181,11 @@ Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
   JavaScript-built** — escalate to `browser_page`, do not report the page
   empty. An explicitly EMPTY result is different: it means Bright Data refuses
   that whole domain by policy, and no amount of escalating within Bright Data
-  helps. Send those to the Anchor gateway's browser (§3a).
+  helps. Send those to the Anchor Browser Gateway's browser (§3a).
 - **`browser_page` is one complete, self-contained visit** — open, navigate,
   optionally run in-page JavaScript, read, close. There is no session between
   calls and the remote browser is pinned to one domain. For anything
-  multi-step or interactive, use the Anchor gateway instead. ⭐ **"Pinned to
+  multi-step or interactive, use the Anchor Browser Gateway instead. ⭐ **"Pinned to
   one domain" is NOT a reason to avoid in-page fetches — the opposite:
   fetching the site's OWN backend API from inside the js payload is the
   intended way to reach it**, because a same-origin call inherits the page's
@@ -241,7 +241,7 @@ YouTube video runs ~2.5 minutes), so expect to go async.
 The last rung: slow, metered browser time. Public data never goes here. Two
 doors, and which one you use depends on what you can do.
 
-### 3a. The Anchor Gateway tools — the interactive door, any surface
+### 3a. The Anchor Browser Gateway tools — the interactive door, any surface
 
 Tools: `open_site`, `read_page`, `run_code`, `check_auth`, `screenshot`,
 `web_task`, `live_view`, `end_session`, `sessions_status`. Flow:
@@ -492,7 +492,9 @@ named "Anchor Gateway" while the real one is named "Anchor Browser Gateway",
 and nearly refused it. Also worth knowing for whoever writes instructions: the
 recipe for fetching this file correctly (below) has to be repeated in the
 INSTRUCTION, because a first-time reader can otherwise only learn it from an
-already-mangled copy.*
+already-mangled copy. Also in v1.5: the Anchor connector is now called by its
+full name, **Anchor Browser Gateway**, everywhere it is named — except where
+the short form is deliberately quoted as the WRONG name in the lesson above.*
 
 *v1.4 — 2026-09-02. One correction to the "How to refresh" note, from
 testing it directly: a scraping tool's markdown mode does far more than
