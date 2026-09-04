@@ -12,23 +12,25 @@ the field, and it changes often.
 `https://raw.githubusercontent.com/HauntGuy/web-access-tips/main/WebAccessTips.md`.
 When the owner says "refresh web access," re-read it from that URL. If a
 network policy blocks the raw URL, fetch it through Bright Data instead
-(§2a if you can run code, §2b otherwise). ⚠⚠ **IF YOU FETCH THIS FILE
-THROUGH A SCRAPING TOOL, ASK FOR RAW/HTML OUTPUT, NOT MARKDOWN.** Measured
-2026-09-02 on the gateway's `scrape_page`: the default markdown mode runs an
-HTML→markdown converter over a file that is ALREADY markdown, and the result
-is mangled four ways — every newline collapsed into one paragraph; every
-`*`, `_` and backtick backslash-escaped (so tool names read `scrape\_page`);
-**every angle-bracket placeholder DELETED as if it were an HTML tag**, so
+(§2a if you can run code, §2b otherwise). ✅ **FIXED 2026-09-04 — the owner's
+Bright Data Gateway now returns plain-text files byte-faithfully on its own,
+in the DEFAULT markdown mode**: it recognises a `.md`/`.txt`/`.json` URL, and
+otherwise reads the server's real `Content-Type`, and in either case skips the
+HTML→markdown conversion and tells you so in a `note`. You no longer need
+`format: "html"` for this file. **Do still pass a `max_chars` well above the
+30,000 default** (this file has outgrown it; ask for 120000).
+⚠ **The old hazard still applies to ANY OTHER scraper**, so it is worth
+knowing what it looks like: running an HTML→markdown converter over a file
+that is already markdown collapses every newline into one paragraph,
+backslash-escapes every `*`, `_` and backtick (tool names read `scrape\_page`),
+**DELETES every angle-bracket placeholder as if it were an HTML tag** (so
 `<zone>`, `<KEY>`, `<value>` simply vanish and instructions lose their
-substitution points; and the tail dropped while the tool still reports
-`truncated: false`. **`format: "html"` returns the file byte-faithfully** —
-newlines, placeholders and tail all intact — **and pass a `max_chars` well
-above the tool's default** (this file has outgrown a 30,000-char default; ask
-for 120000). The same applies to ANY plain
-`.md` / `.txt` file you fetch through a scraper. Where you can fetch the raw
-URL directly (curl, a plain fetch tool), that is best of all. **Either way,
-check that what you received ENDS with the version line** — if it does not,
-you have a partial copy, so say so rather than acting on it.
+substitution points), and drops the tail while still reporting
+`truncated: false`. With a scraper that has no such fix, ask for raw or HTML
+output. Where you can fetch the raw URL directly (curl, a plain fetch tool),
+that is best of all. **Either way, check that what you received ENDS with the
+version line** — if it does not, you have a partial copy, so say so rather
+than acting on it.
 
 **This file contains no secrets, ever.** No keys, tokens, passphrases, or
 account details belong here — tips only. If you are asked to add something
@@ -187,11 +189,13 @@ Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
   empty. An explicitly EMPTY result is different: it means Bright Data refuses
   that whole domain by policy, and no amount of escalating within Bright Data
   helps. Send those to the Anchor Browser Gateway's browser (§3a).
-- ⚠ **`scrape_page`'s "looks like a SHELL" note is a character-count
-  heuristic, and it false-positives on genuinely tiny pages** (example.com,
-  183 characters, complete: heading, sentence, link — measured 2026-09-03).
-  Judge by whether the heading AND a body sentence came back, not by the
-  note; escalate only when the body is near-empty.
+- ✅ **`scrape_page`'s "looks like a SHELL" note was a raw character count
+  and false-positived on genuinely tiny complete pages** (example.com, 183
+  characters: heading, sentence, link — measured 2026-09-03). **FIXED
+  2026-09-04:** a page carrying a heading AND a real sentence is no longer
+  called a shell, so the note now means what it says. The underlying judgment
+  is still yours on any other tool — escalate on a near-empty body, not on a
+  small one.
 - **`browser_page` is one complete, self-contained visit** — open, navigate,
   optionally run in-page JavaScript, read, close. There is no session between
   calls and the remote browser is pinned to one domain. For anything
@@ -259,6 +263,14 @@ Tools: `open_site`, `read_page`, `run_code`, `check_auth`, `screenshot`,
 `read_page` or `run_code` → `end_session`**, with `sessions_status` as the
 orphan check.
 
+- 💰 **`read_page` has a context-cost control (new 2026-09-04) — use it.** A
+  capture-sized page runs to tens of thousands of characters, and pulling that
+  into your conversation just to learn the page loaded is pure waste. Pass
+  `mode: "measure"` for the size and title with NO text (the cheapest way to
+  confirm a page rendered, and the right way to POLL a slow one), or
+  `mode: "preview"` for the opening text only. Both report the page's TRUE
+  length, so you can decide before pulling the whole thing; `mode: "full"`
+  (the default) is unchanged.
 - ⭐ **REUSE a signed-in profile; never log into one that already works.** An
   unnecessary login can end in a password reset that logs the owner out
   everywhere. Verify sign-in from `check_auth` (cookie NAMES), never from how
@@ -491,6 +503,17 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v1.7 — 2026-09-04, a FIX release: two long-standing gateway papercuts are
+gone and one new capability exists. The owner's Bright Data Gateway now
+returns plain-text files (`.md`, `.txt`, `.json`) byte-faithfully in its
+DEFAULT mode — detected from the URL and from the server's real
+`Content-Type` — so the `format: "html"` workaround this file used to insist
+on is no longer needed for it; its "looks like a SHELL" note no longer fires
+on small complete pages; and the Anchor Browser Gateway's `read_page` gained
+`mode: "measure"` (size only, no text) and `mode: "preview"` (opening text
+only), both reporting the page's true length. The workaround advice is kept
+where it still applies — to any OTHER scraper.*
 
 *v1.6 — 2026-09-03 (later the same day), two measured refusal-side lessons
 from the owner's connector-icon work: Bright Data refuses Google's own hosts,
