@@ -450,6 +450,21 @@ orphan check.
   verification" → correct title with no body → full text. Never conclude
   "empty" before the fourth poll. *(Measured on one Cloudflare-fronted site;
   treat the stealth-stack generalization as promising rather than proven.)*
+- ⭐ **A site's own JSON API that answers a plain fetch with an EMPTY result may be
+  alive — call it from a profile session's REQUEST CONTEXT before declaring it
+  dead.** A community site's article API (BoardGameGeek's
+  `api.geekdo.com/api/articles?threadid=…` door) returned an empty list to a
+  plain fetch and looked dead for two weeks; the same URL then answered HTTP 200
+  with the full 25-article list when called as `page.request.get(url)` inside a
+  named-profile browser session that had just cleared the site's Cloudflare
+  interstitial — no special headers, no login. The request context carries the
+  session's cookies and clearance; an in-page `fetch` from `page.evaluate` in
+  the SAME session failed outright (CORS), so use the request context, not the
+  page. Also worth knowing: the page itself called the singular
+  `/api/article?threadid=` — watch its resource list for the exact shape. Rule:
+  the ROUTE, not the endpoint, is usually what changed. (Connector-only: the
+  Anchor Browser Gateway's `run_code`; shell + key: the same snippet through the
+  REST execute-code route.) *(Measured 2026-09-08 on one site.)*
 - **Forms:** target fields by id (never "the first textarea"); HTML5 date
   inputs require `YYYY-MM-DD` (other formats fail silently); leave
   derived/alternative fields blank when the primary ones are filled; prefer
@@ -503,6 +518,12 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v1.8 — 2026-09-08. Adds to §4: a backdoor JSON API that returns EMPTY to a
+plain fetch is often alive — call it from a profile browser session's request
+context (`page.request.get`) after the interstitial clears; an in-page `fetch`
+in the same session can fail on CORS. Measured on the BoardGameGeek article API,
+which had looked dead since 2026-08-25.*
 
 *v1.7 — 2026-09-04, a FIX release: two long-standing gateway papercuts are
 gone and one new capability exists. The owner's Bright Data Gateway now
