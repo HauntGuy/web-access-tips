@@ -339,6 +339,20 @@ orphan check.
 - **Profiles pin their browser fingerprint** across sessions; a sticky IP can
   only be set at profile creation, never added later. Never use Anchor's
   identity/auto-login feature — it fails on CAPTCHA-gated sites (HTTP 422).
+- **When a site refuses EVERY automated browser — even the owner's own login
+  typed by hand into a remote live view — the owner's OWN browser still works.**
+  Measured once (a single run, 2026-09-25, Edmunds.com): a plain page fetch
+  returned nothing, a remote rendered browser hit a CAPTCHA wall, an anonymous
+  remote session drew 403, and the owner's hand sign-in in a remote live view
+  was refused twice ("The request is invalid or malformed" — an invisible
+  risk score on the remote browser). The same page read cleanly in the owner's
+  own signed-in browser. **If you can act in the owner's own browser** (an
+  in-browser Claude assistant you can drive — today only a session running on
+  the owner's own machine can), do it, read-only. **If you cannot, hand the
+  owner ONE paste block for their in-browser Claude assistant:** read-only;
+  quote the site's exact wording; give the page URL and title; expand collapsed
+  sections; report any verification check it met — and ask them to paste its
+  answer back. One run is an observation, not a diagnosis.
 - **The live view has no address bar** — a human watching cannot navigate; the
   driving side must do all navigation.
 - **Docs:** the ordinary docs pages are JS shells and their `.md` twins
@@ -518,6 +532,12 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v1.9 — 2026-09-25. Adds to §3c: when a site refuses every automated browser,
+the owner's own hand login in a remote live view included, the owner's OWN
+signed-in browser still reads it — act in it if you can, otherwise hand the
+owner one paste block for their in-browser Claude assistant. Measured once, on
+Edmunds.com.*
 
 *v1.8 — 2026-09-08. Adds to §4: a backdoor JSON API that returns EMPTY to a
 plain fetch is often alive — call it from a profile browser session's request
