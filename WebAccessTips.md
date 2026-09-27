@@ -97,8 +97,9 @@ Probe, don't assume. In order:
   specs, versions, availability, docs). If you answer from training data, say
   so explicitly.
 - **Never conclude from one failed method.** Most first fetches fail for
-  boring reasons (network policy, bot defense). Escalate: search → plain
-  fetch → structured feed → real browser → (owner's login route). Only after
+  boring reasons (network policy, bot defense). Escalate: search → structured
+  feed (whenever the site is a well-known platform, §2c) → plain fetch → real
+  browser → (owner's login route). Only after
   the ladder is exhausted do you report a page unreachable — and then say
   what you tried and what each attempt returned.
 - **"Am I seeing everything a human would see?" is YOUR responsibility.**
@@ -175,9 +176,11 @@ anything else in this section.**
 
 Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
 `feed_snapshot`, `browser_page`, `account_status`. The ladder within them:
-**`search` to discover → `scrape_page` for an ordinary page →
-`search_datasets` / `fetch_feed` FIRST for any well-known platform (§2c) →
-`browser_page` when a page comes back as a shell or a refused domain.**
+**`search` to discover → `search_datasets` / `fetch_feed` FIRST for any
+link or question on a well-known platform (§2c) → `scrape_page` for an
+ordinary page → `browser_page` when a page comes back as a shell or a refused
+domain.** (Reordered in v2.0: a link you are handed looks like "an ordinary
+page," so the feed check has to come before the page scrape, not after it.)
 
 - **No staleness remedy is needed and none applies.** This server serves no
   OAuth, so there is no token to expire and nothing for the owner to
@@ -227,6 +230,20 @@ LIVE catalog (`GET https://api.brightdata.com/datasets/list` with code, or
 hardcode them. Feeds bill per record (~$0.70/1,000; failed rows bill too —
 pass `include_errors=true` and inspect failures). Some feeds are slow (a
 YouTube video runs ~2.5 minutes), so expect to go async.
+
+⚠ **A LINK YOU ARE HANDED is the case most often missed** (observed by the
+owner, repeatedly: sessions given an Amazon product link went straight to a
+page scrape). A link is not "an ordinary page" until you have checked its site
+against the list above. If it is on one: search the catalog for the site plus
+the page type (`amazon products`), pick the feed that matches the EXACT domain
+(the catalog holds more than a dozen Amazon product feeds — `Amazon products`
+is amazon.com; amazon.de, amazon.co.uk and others have their own), then pull
+the link through it (`fetch_feed` through the gateway, `/datasets/v3/scrape`
+with code). ✅ Measured 2026-09-27: one amazon.com product link through the
+`Amazon products` feed returned a clean record in 6 seconds — price, rating,
+review count, availability, buy box, other sellers, and the "customers say"
+summary — where a page scrape returns a long, noisy page. Fall back to the page
+scrape only when the feed errors or no feed matches the site.
 
 ### 2d. Proxy and browser modes — where code executes decides everything
 
@@ -532,6 +549,12 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v2.0 — 2026-09-27. §2b's ladder now puts the structured-feed check BEFORE
+the page scrape, and §2c adds the case it exists for: a link you are handed on
+a well-known platform (Amazon above all) goes to its feed, matched to the exact
+domain, before any page scrape. Measured the same day: an amazon.com product
+link returned a clean structured record in 6 seconds.*
 
 *v1.9 — 2026-09-25. Adds to §3c: when a site refuses every automated browser,
 the owner's own hand login in a remote live view included, the owner's OWN
