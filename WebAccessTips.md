@@ -182,6 +182,16 @@ ordinary page → `browser_page` when a page comes back as a shell or a refused
 domain.** (Reordered in v2.0: a link you are handed looks like "an ordinary
 page," so the feed check has to come before the page scrape, not after it.)
 
+- 🛒 **`scrape_page` now checks the feeds for you (since 2026-09-27).** When
+  the link's site has structured feeds, its result OPENS with
+  `STRUCTURED_FEEDS_FOR_THIS_SITE`: the best matches by name, then either
+  `next_call` (the exact `fetch_feed` call, when one feed clearly fits — an
+  amazon.com product link gets `Amazon products`) or `choose` (several could
+  fit — pick the one whose name matches the page's type: a video, a channel, a
+  profile, a listing). Read that block before the page text below it, and use
+  the feed when one fits; the scraped page is the fallback. A domain Bright Data
+  REFUSES names its feeds in the refusal (YouTube's pages are refused; its
+  feeds are the way in). No note means no feed is named after that site.
 - **No staleness remedy is needed and none applies.** This server serves no
   OAuth, so there is no token to expire and nothing for the owner to
   "reconnect." If a gateway call fails, retry it; a transient tool-list flap
@@ -243,7 +253,9 @@ with code). ✅ Measured 2026-09-27: one amazon.com product link through the
 `Amazon products` feed returned a clean record in 6 seconds — price, rating,
 review count, availability, buy box, other sellers, and the "customers say"
 summary — where a page scrape returns a long, noisy page. Fall back to the page
-scrape only when the feed errors or no feed matches the site.
+scrape only when the feed errors or no feed matches the site. (Through the
+owner's gateway, `scrape_page` does this lookup itself and puts the answer at
+the top of its result — §2b.)
 
 ### 2d. Proxy and browser modes — where code executes decides everything
 
@@ -549,6 +561,12 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v2.1 — 2026-09-27. §2b: the owner's gateway `scrape_page` now opens its
+result with the link's site's structured feeds (the exact `fetch_feed` call
+when one clearly fits, otherwise a choice by page type), and a refused domain
+names its feeds in the refusal. Measured the same day: an amazon.com link →
+the note → one `fetch_feed` call → a clean record.*
 
 *v2.0 — 2026-09-27. §2b's ladder now puts the structured-feed check BEFORE
 the page scrape, and §2c adds the case it exists for: a link you are handed on
