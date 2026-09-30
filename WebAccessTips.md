@@ -206,7 +206,7 @@ for multi-step interaction.** (Reordered in v2.0: a link you are handed looks
 like "an ordinary page," so the feed check has to come before the page
 scrape, not after it.) ⚠ **Corrected in v2.2: a REFUSED page does not go to
 `browser_page`.** Earlier text here, and the gateway's own refusal message
-as of 2026-09-30, sent it there; `browser_page` is Bright Data too and is
+until its v1.4.0 (2026-09-30), sent it there; `browser_page` is Bright Data too and is
 bound by the same policy (measured: a government page refused by
 `scrape_page` was refused by `browser_page` as well, a wasted step before the
 Anchor browser read it). And a public page that merely needs JavaScript (a
@@ -334,10 +334,19 @@ the pages for you ("discover"). Reddit is the case that matters most
   `discover_by=nonsense` answers "Incorrect discovery collector id Available
   types: …" with the real names (measured on the Reddit Posts feed). The
   feed's docs page (`docs.brightdata.com`) lists the modes' inputs.
-- ⚠ **Through the gateway alone (no code), discover mode is not available
-  yet** — its `fetch_feed` only collects by URL. Until it is, use `search` with
-  `site:reddit.com/r/<subreddit> <terms>` to find the threads, then pull the
-  good ones through `Reddit - Comments`.
+- ✅ **Through the owner's gateway (no code needed), since its v1.4.0
+  (2026-09-30):** `fetch_feed` with `discover_by: "keyword"` and `inputs:
+  [{"keyword": "…", "date": "Past year", "num_of_posts": 10}]` runs the search
+  (async: poll `feed_snapshot`); `discover_by: "list"` names a feed's modes.
+  ⚠ **If your `fetch_feed` shows no `discover_by` field** (a long-running
+  conversation can keep the tool's older description), put it INSIDE the input
+  instead — `inputs: [{"discover_by": "keyword", "keyword": "…", "date": "Past
+  year", "num_of_posts": 10}]` — which the gateway reads and removes before
+  sending (verified the day it shipped). Its refusals also now say plainly
+  where a refused page goes (the Anchor browser, never `browser_page`).
+  Another route, when a feed search is overkill: `search` with
+  `site:reddit.com/r/<subreddit> <terms>`, then the good threads through
+  `Reddit - Comments`.
 - ❌ **Reddit's `.json` trick does NOT work through Bright Data** — `.json`
   endpoints and Reddit's own search page are refused under Reddit's robots.txt
   (measured 2026-09-30), and its search page in a real browser meets a "Prove
@@ -657,6 +666,12 @@ the word CAPTCHA directly followed by the word "page" anywhere in this file**
 surface that reads it through Bright Data loses it (v2.2 did this for about an
 hour). After every push, fetch the raw URL through Bright Data and check that
 the whole file came back.
+
+*v2.4 — 2026-09-30, the same afternoon: the owner's Bright Data Gateway
+v1.4.0 shipped, so §2c's Reddit search now works through the gateway alone
+(`fetch_feed`'s `discover_by`, or the same key inside an input for a
+conversation holding the tool's older description), and its refusals route a
+refused page to the Anchor browser, retrying an empty reply once first.*
 
 *v2.3 — 2026-09-30, the same afternoon: a FIX. v2.2 held one phrase that
 made Bright Data's page fetch return this whole file empty (the word CAPTCHA
