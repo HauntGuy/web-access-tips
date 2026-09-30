@@ -168,7 +168,12 @@ anything else in this section.**
   the same day, a forum's ordinary thread pages came back in full while its
   `.json` endpoints and its search page were refused, and two sites refused
   weeks earlier now served their public pages. So judge each URL, and re-test
-  a site remembered as refused. Two refusals do cover a whole domain and
+  a site remembered as refused. ⚠ **One FALSE refusal is known: the page fetch
+  returns 0 bytes for any page whose text contains the word CAPTCHA
+  immediately followed by the word "page"** (either case, plural too —
+  measured 2026-09-30; it takes the page for a block page). So a page that
+  merely writes ABOUT such challenges can look refused: read it in a real
+  browser before believing the refusal. Two refusals do cover a whole domain and
   never change with the page: **government sites** (any `.gov`, state or
   federal; Bright Data blocks the category in BOTH its page fetch and its
   browser — the browser says "classified as Government and blocked") and
@@ -242,7 +247,7 @@ Anchor browser is the slow, metered rung.
   resource count (§4) before any longer wait.
   **The SITE's own bot wall** ("Request unsuccessful. Incapsula incident ID
   …", "Prove your humanity") → `browser_page` often beats the first kind (it
-  did on an Incapsula-fronted shop); a CAPTCHA page in `browser_page` means
+  did on an Incapsula-fronted shop); a CAPTCHA challenge in `browser_page` means
   try the feed, a search, or the Anchor browser with a profile.
   **"A global adaptive rate limit has been applied" / `bucket_rate_limit`** →
   Bright Data's own throttle on that site, not a refusal: use the site's feed
@@ -646,7 +651,19 @@ orphan check.
 Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
-capability, kept token-free, one file forever.
+capability, kept token-free, one file forever. ⚠ **Maintainers: never write
+the word CAPTCHA directly followed by the word "page" anywhere in this file**
+— Bright Data's page fetch then returns the whole file as 0 bytes, and every
+surface that reads it through Bright Data loses it (v2.2 did this for about an
+hour). After every push, fetch the raw URL through Bright Data and check that
+the whole file came back.
+
+*v2.3 — 2026-09-30, the same afternoon: a FIX. v2.2 held one phrase that
+made Bright Data's page fetch return this whole file empty (the word CAPTCHA
+directly followed by the word "page", which it reads as a block page), so any
+surface reading it through Bright Data got nothing. Reworded; §2a now warns of
+this false refusal, and §6 tells maintainers to verify every push through
+Bright Data.*
 
 *v2.2 — 2026-09-30, from a Chat's survey of its own past refusals and
 escalations, each claim re-measured the same day. §2b's ladder no longer sends
