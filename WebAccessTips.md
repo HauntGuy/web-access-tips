@@ -102,6 +102,10 @@ Probe, don't assume. In order:
   browser → (owner's login route). Only after
   the ladder is exhausted do you report a page unreachable — and then say
   what you tried and what each attempt returned.
+- **When you call something a refusal, quote the tool's exact words** (the
+  error text, or "0 bytes, HTTP 200"). A paraphrase like "Bright Data refuses
+  that domain by policy" cannot be checked later, and several failures that
+  look like refusals are not (§2b's failure list).
 - **"Am I seeing everything a human would see?" is YOUR responsibility.**
   A title-and-nav shell, a cookie banner, a "show more" button, an empty
   widget — all mean escalate, not report.
@@ -153,12 +157,25 @@ anything else in this section.**
 - **A failed search query is refused for ~15 seconds** ("This query recently
   failed"). Back off ~20 s and retry once. Run searches **serially** —
   parallel SERP calls reliably trigger the refusal.
-- **A 0-byte HTTP 200 is a REFUSAL, not a JavaScript shell.** Fetch a static
-  asset (an image, a .js file) from the same domain to surface the actual
-  refusal text. Robots-policy refusals (error `brob`, or a fetch tool's
-  ROBOTS_DISALLOWED) are permanent for that domain — that is the signal to
-  hand the job to a real-browser route (the Anchor Browser Gateway reaches domains
-  Bright Data refuses, whether or not a login is involved).
+- **A 0-byte HTTP 200 is usually a REFUSAL, not a JavaScript shell — but
+  retry it ONCE before believing it.** Measured 2026-09-30: one page returned 0
+  bytes once, then 105 KB and 164 KB on the next two tries; a real refusal
+  repeats. Fetch a static asset (an image, a .js file) from the same domain to
+  surface the actual refusal text, which can also arrive as text rather than
+  as nothing ("Residential Failed (bad_endpoint): Requested site is not
+  available for immediate residential (no KYC) access mode in accordance with
+  robots.txt"). ⚠ **A refusal is often about the PAGE, not the whole site:**
+  the same day, a forum's ordinary thread pages came back in full while its
+  `.json` endpoints and its search page were refused, and two sites refused
+  weeks earlier now served their public pages. So judge each URL, and re-test
+  a site remembered as refused. Two refusals do cover a whole domain and
+  never change with the page: **government sites** (any `.gov`, state or
+  federal; Bright Data blocks the category in BOTH its page fetch and its
+  browser — the browser says "classified as Government and blocked") and
+  anything behind a login. A confirmed refusal is the signal to hand the page
+  to a real-browser route outside Bright Data (the Anchor Browser Gateway
+  reaches pages Bright Data refuses, whether or not a login is involved) —
+  after checking for a structured feed covering the site (§2c).
 - **Google's own hosts are refused too — including the favicon service**
   (`google.com/s2/favicons`, which redirects to `gstatic.com/faviconV2`).
   Search still works because it rides the SERP mode; a plain fetch of a
@@ -178,9 +195,18 @@ Tools: `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
 `feed_snapshot`, `browser_page`, `account_status`. The ladder within them:
 **`search` to discover → `search_datasets` / `fetch_feed` FIRST for any
 link or question on a well-known platform (§2c) → `scrape_page` for an
-ordinary page → `browser_page` when a page comes back as a shell or a refused
-domain.** (Reordered in v2.0: a link you are handed looks like "an ordinary
-page," so the feed check has to come before the page scrape, not after it.)
+ordinary page → `browser_page` when a page comes back as a SHELL →
+the Anchor Browser Gateway's browser when Bright Data REFUSES the page, or
+for multi-step interaction.** (Reordered in v2.0: a link you are handed looks
+like "an ordinary page," so the feed check has to come before the page
+scrape, not after it.) ⚠ **Corrected in v2.2: a REFUSED page does not go to
+`browser_page`.** Earlier text here, and the gateway's own refusal message
+as of 2026-09-30, sent it there; `browser_page` is Bright Data too and is
+bound by the same policy (measured: a government page refused by
+`scrape_page` was refused by `browser_page` as well, a wasted step before the
+Anchor browser read it). And a public page that merely needs JavaScript (a
+price that renders client-side) goes to `browser_page` BEFORE Anchor — the
+Anchor browser is the slow, metered rung.
 
 - 🛒 **`scrape_page` now checks the feeds for you (since 2026-09-27).** When
   the link's site has structured feeds, its result OPENS with
@@ -199,9 +225,31 @@ page," so the feed check has to come before the page scrape, not after it.)
   a Reconnect button — that advice belongs to vendor connectors only.
 - **`scrape_page` returning a title-and-nav shell means the content is
   JavaScript-built** — escalate to `browser_page`, do not report the page
-  empty. An explicitly EMPTY result is different: it means Bright Data refuses
-  that whole domain by policy, and no amount of escalating within Bright Data
-  helps. Send those to the Anchor Browser Gateway's browser (§3a).
+  empty. An explicitly EMPTY result is different: Bright Data refuses that page
+  by policy (retry once first — §2a), and no amount of escalating within
+  Bright Data helps. Send those to the Anchor Browser Gateway's browser (§3a),
+  whatever the refusal message itself suggests.
+- 🧭 **Read the failure before escalating — they are not all refusals, and each
+  has its own next step** (a Chat's survey of its own past sessions,
+  2026-09-30; the first three kinds re-measured the same day, the rest as
+  that survey observed them):
+  **0 bytes, or "not available … in accordance with robots.txt"** → a
+  Bright Data refusal: retry once, check for a feed, then the Anchor browser.
+  **"classified as Government and blocked"** (or any `.gov` page) → skip
+  `browser_page`; straight to the Anchor browser.
+  **A title-and-nav shell, or a few dozen characters** ("Location Search
+  Results" and nothing else) → a client-side render: `browser_page`, then the
+  resource count (§4) before any longer wait.
+  **The SITE's own bot wall** ("Request unsuccessful. Incapsula incident ID
+  …", "Prove your humanity") → `browser_page` often beats the first kind (it
+  did on an Incapsula-fronted shop); a CAPTCHA page in `browser_page` means
+  try the feed, a search, or the Anchor browser with a profile.
+  **"A global adaptive rate limit has been applied" / `bucket_rate_limit`** →
+  Bright Data's own throttle on that site, not a refusal: use the site's feed
+  (it beat the limit on Amazon search pages) or wait and retry.
+  **A redirect to the site's sign-in page** → a login wall: a feed may still
+  cover the data (a reviews feed did, where the reviews page demanded a
+  sign-in); otherwise the owner's login route (§3).
 - ✅ **`scrape_page`'s "looks like a SHELL" note was a raw character count
   and false-positived on genuinely tiny complete pages** (example.com, 183
   characters: heading, sentence, link — measured 2026-09-03). **FIXED
@@ -256,6 +304,39 @@ summary — where a page scrape returns a long, noisy page. Fall back to the pag
 scrape only when the feed errors or no feed matches the site. (Through the
 owner's gateway, `scrape_page` does this lookup itself and puts the answer at
 the top of its result — §2b.)
+
+🔎 **SOME FEEDS SEARCH, NOT JUST FETCH — "discover" mode.** Many feeds take a
+page URL ("collect"), but some also take a KEYWORD or a listing URL and find
+the pages for you ("discover"). Reddit is the case that matters most
+(measured 2026-09-30):
+- **A Reddit thread link** → the `Reddit - Comments` feed (the post with its
+  whole comment thread); through the gateway, `scrape_page` on the thread
+  names it as the `next_call`. Reddit's ordinary thread pages also scrape
+  fine.
+- **"What are people on Reddit saying about X?"** → the `Reddit- Posts` feed's
+  discover-by-keyword mode. With code and a key: `POST
+  /datasets/v3/trigger?dataset_id=<Posts id>&include_errors=true&format=json&type=discover_new&discover_by=keyword`
+  with body `[{"keyword":"…","date":"Past year","num_of_posts":10}]`; it
+  always runs async (~3 minutes measured; poll `/progress/`, then
+  `/snapshot/`). Measured: ten on-topic posts, each with title, subreddit,
+  date, upvotes, comment count and its comments. The same feed also discovers
+  by subreddit (`discover_by=subreddit_url`, input `{"url":"<subreddit
+  URL>","sort_by":"New"}` — capitalized; `"new"` is rejected) and by author
+  (`author_url`). ⚠ Without `type=discover_new&discover_by=…` the feed
+  rejects a keyword with "This input should not contain a keyword field" —
+  that error means the MODE is missing, not that the feed cannot search.
+  🔑 **To list any feed's discover modes, ask for a bogus one:**
+  `discover_by=nonsense` answers "Incorrect discovery collector id Available
+  types: …" with the real names (measured on the Reddit Posts feed). The
+  feed's docs page (`docs.brightdata.com`) lists the modes' inputs.
+- ⚠ **Through the gateway alone (no code), discover mode is not available
+  yet** — its `fetch_feed` only collects by URL. Until it is, use `search` with
+  `site:reddit.com/r/<subreddit> <terms>` to find the threads, then pull the
+  good ones through `Reddit - Comments`.
+- ❌ **Reddit's `.json` trick does NOT work through Bright Data** — `.json`
+  endpoints and Reddit's own search page are refused under Reddit's robots.txt
+  (measured 2026-09-30), and its search page in a real browser meets a "Prove
+  your humanity" wall. The feeds above are the route.
 
 ### 2d. Proxy and browser modes — where code executes decides everything
 
@@ -507,7 +588,12 @@ orphan check.
   `/api/article?threadid=` — watch its resource list for the exact shape. Rule:
   the ROUTE, not the endpoint, is usually what changed. (Connector-only: the
   Anchor Browser Gateway's `run_code`; shell + key: the same snippet through the
-  REST execute-code route.) *(Measured 2026-09-08 on one site.)*
+  REST execute-code route.) *(Measured 2026-09-08 on one site.)* 🔁 **Update
+  2026-09-30: that same article API now answers through Bright Data's plain
+  page fetch** (`scrape_page`, or the Unlocker with code: the full JSON, the
+  site's game and thread pages too), so try that first and keep the profile
+  session as the fallback — access that was refused can open up later, which
+  is why a remembered refusal is re-tested rather than trusted (§2a).
 - **Forms:** target fields by id (never "the first textarea"); HTML5 date
   inputs require `YYYY-MM-DD` (other formats fail silently); leave
   derived/alternative fields blank when the primary ones are filled; prefer
@@ -561,6 +647,18 @@ Master: `https://github.com/HauntGuy/web-access-tips` — maintained by the
 owner's web-access project, which folds in new field lessons as they are
 proven. Corrections and new tips go to the owner, not into forks. Framed by
 capability, kept token-free, one file forever.
+
+*v2.2 — 2026-09-30, from a Chat's survey of its own past refusals and
+escalations, each claim re-measured the same day. §2b's ladder no longer sends
+a REFUSED page to `browser_page` (it is bound by the same policy; government
+sites are refused by both) and gains a list of the failures that only look
+like refusals, each with its next step. §2a: retry a 0-byte reply once (one
+was a hiccup), refusals are often per page rather than per site, and a
+remembered refusal is re-tested. §2c: "discover" mode — Reddit posts found by
+keyword, subreddit or author, the bogus-mode trick that lists any feed's modes,
+and Reddit's `.json` trick refused through Bright Data. §4: the BoardGameGeek
+article API now answers through a plain page fetch. §1: quote the tool's
+exact words when calling something a refusal.*
 
 *v2.1 — 2026-09-27. §2b: the owner's gateway `scrape_page` now opens its
 result with the link's site's structured feeds (the exact `fetch_feed` call
