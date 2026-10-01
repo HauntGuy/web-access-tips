@@ -18,12 +18,13 @@ doctrine, and the browser technique. This file should rarely change.
 `https://github.com/HauntGuy/web-access-tips`; the latest copy is always at
 `https://raw.githubusercontent.com/HauntGuy/web-access-tips/main/WebAccessTips.md`.
 When the owner says "refresh web access," re-read it from that URL. If a
-network policy blocks the raw URL, fetch it through Bright Data instead: the
-owner's gateway `scrape_page` returns a plain-text file byte-faithfully in its
-default mode (pass `max_chars: 120000`); with code and a key, the Unlocker in
-raw format. Another scraper's HTML-to-markdown mode can mangle a markdown file
-(newlines collapsed, characters escaped, angle-bracket placeholders deleted,
-the tail dropped), so ask any other tool for raw output. Either way, check
+network policy blocks the raw URL, fetch it through the owner's gateway
+instead: the Web Access Gateway's `read` returns a text file exactly as
+served, and so does the Bright Data Gateway's `scrape_page` in its default
+mode (pass `max_chars: 120000` to either); with code and a key, the Unlocker
+in raw format. Another scraper's HTML-to-markdown mode can mangle a markdown
+file (newlines collapsed, characters escaped, angle-bracket placeholders
+deleted, the tail dropped), so ask any other tool for raw output. Either way, check
 that what you received ends with the version line; if it does not, you hold a
 partial copy, so say so rather than acting on it.
 
@@ -45,22 +46,27 @@ Probe, don't assume. In order:
    owner staged for you. With a key and a shell, the direct REST APIs are your
    primary route (the rules file's Part 2). If you can run code but find no
    key, ask the owner where it is staged; meanwhile the gateway tools work.
-2. **Do you have the owner's gateway tools?** Two sets:
-   the Bright Data Gateway — `search`, `scrape_page`, `search_datasets`,
-   `fetch_feed`, `feed_snapshot`, `browser_page`, `account_status`; and the
-   Anchor Browser Gateway — `open_site`, `read_page`, `run_code`,
-   `check_auth`, `screenshot`, `web_task`, `live_view`, `end_session`,
-   `sessions_status`. Together they are a complete toolkit on every surface,
-   including ones with no shell: search, pages, structured feeds, a real
-   remote browser, and login-walled pages through persistent signed-in
+2. **Do you have the owner's gateway tools?** Three sets, all the owner's
+   own connectors. The Web Access Gateway — `search`, `read`, `browse`,
+   `sign_in`, `status` — does the work of both services behind five tools and
+   picks the route itself; where you have it, prefer it (section 1 says how
+   to read its replies). The older pair it is replacing: the Bright Data
+   Gateway — `search`, `scrape_page`, `search_datasets`, `fetch_feed`,
+   `feed_snapshot`, `browser_page`, `account_status`; and the Anchor Browser
+   Gateway — `open_site`, `read_page`, `run_code`, `check_auth`,
+   `screenshot`, `web_task`, `live_view`, `end_session`, `sessions_status`.
+   The single gateway, or the pair together, is a complete toolkit on every
+   surface, including ones with no shell: search, pages, structured feeds, a
+   real remote browser, and login-walled pages through persistent signed-in
    profiles.
    - **Absence from your tool list is not absence from the account.** Where
-     tools load on demand, search for them, and search separately for the
-     Bright Data tools and the Anchor tools: one search often returns only a
-     subset. Never conclude a gateway is missing after one lookup.
+     tools load on demand, search for them, and search separately for each
+     gateway's tools: one search often returns only a subset. Never conclude
+     a gateway is missing after one lookup.
    - **Identify a gateway by its tool set, never its name.** Connector names
-     vary and get renamed; a server whose tools are exactly those names is the
-     owner's gateway, whatever its label says.
+     vary and get renamed; a server whose tools are exactly one of those sets
+     is the owner's gateway, whatever its label says. Two sets share the name
+     `search`, so match the whole set, never one tool.
 3. **Neither, but you can fetch URLs?** You can still read public pages and
    this file. Say plainly what you cannot do (bot-protected sites, logins,
    structured feeds) rather than silently returning less.
@@ -102,6 +108,15 @@ Rules for reading them:
   in a way you do not understand, run that one URL through the matching
   gateway tool and follow its reply.
 
+**The Web Access Gateway says the same in two fields.** Every reply carries
+`via`, how the answer was got (a structured feed, a page fetch, which browser,
+a saved sign-in), and a failure carries `next`, what was tried and what can
+still be done. Follow `next` as you would a NEXT_STEP, by the same rules. You
+do not walk the ladder (section 3) yourself: the gateway picks among
+structured feeds, the page fetch and real browsers inside one call, and spends
+paid browser time only when cheaper routes fail. Slow work answers `pending`
+with a resume token; call the same tool again with only that token.
+
 ## 2. Universal discipline — any capability level
 
 - **Accuracy over speed.** Verify anything that can have changed (prices,
@@ -127,6 +142,10 @@ Rules for reading them:
 ## 3. The ladder, in principle
 
 The gateway's replies say which rung comes next; this is only the shape.
+With the Web Access Gateway the ladder runs inside the gateway, and you choose
+only among its tools: `search` to discover (with `site` for one site's own
+search), `read` for any page or file, `browse` to act on a page, and
+`sign_in` when the owner must log in.
 
 1. **Search** to discover sources. Run searches one at a time. If an exact
    phrase finds nothing, loosen it; text inside PDFs and document hosts is
@@ -176,6 +195,13 @@ every Bright Data route has failed.
 `sessions_status` as the orphan check. `read_page` takes `mode: "measure"`
 (size and title, no text — the cheap way to confirm a render or poll a slow
 page) and `mode: "preview"` (the opening text only).
+
+**With the Web Access Gateway:** `read` with `signed_in: true` reads as the
+owner through the saved sign-in for the site (its profile, named as below),
+and `browse` uses it too. `sign_in` says whether that sign-in still holds;
+if not, it returns a live-view link for the owner to sign in by hand, and
+called again once the owner says they are done, it saves the sign-in and
+closes the browser. Never pass a password to any tool.
 
 - **Profile names are derived, never invented:** the site's domain,
   lowercased, dots removed, TLD kept (`consumerreports.org` →
@@ -341,8 +367,8 @@ owner's web-access project. Corrections go to the owner, not into forks.
 
 - **What belongs here, and what does not.** A lesson about how Bright Data or a
   site behaves right now (a new refusal, a changed error, a feed's quirk)
-  belongs in the Bright Data Gateway's replies, where every conversation meets
-  it at the moment of need. This file holds principles and techniques that
+  belongs in the gateways' replies, where every conversation meets it at the
+  moment of need. This file holds principles and techniques that
   stay true.
 - Framed by capability, token-free, one file.
 - ⚠ Never write the word CAPTCHA directly followed by the word "page" anywhere
@@ -351,9 +377,10 @@ owner's web-access project. Corrections go to the owner, not into forks.
   through Bright Data and check that the whole file came back.
 - Every earlier version is in the repository's commit history.
 
-*v3.0 — 2026-09-30. Rewritten short and stable, on the owner's design: the
-fast-moving Bright Data behaviour this file used to track (which pages are
-refused, how refusals arrive, per-site notes, dated measurements) now travels
-in the Bright Data Gateway's replies as NEXT_STEP guidance (gateway v1.5.0),
-which reaches every conversation the moment it changes. Section 1 says how to
-read it; the rest keeps the principles and techniques from v2.4.*
+*v3.1 — 2026-10-01. Adds the owner's Web Access Gateway, one connector for
+both services with the route chosen inside it: how to recognise it (section
+0), its `via` and `next` fields (section 1), its tools on the ladder (section
+3) and its sign-in flow (section 4). v3.0 (2026-09-30) rewrote the file short
+and stable: the fast-moving Bright Data behaviour it used to track now
+travels in the gateways' replies, which reach every conversation the moment
+they change.*
