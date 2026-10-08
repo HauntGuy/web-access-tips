@@ -352,7 +352,14 @@ closes the browser. Never pass a password to any tool.
   never store a composed proxy URL, since a frozen credential dies silently at
   rotation.
 - **Binary downloads** (PDFs, images): write straight to a file; capturing them
-  as shell text destroys them.
+  as shell text destroys them. And verify every binary that came through an
+  unblocker or proxy before trusting it: check its size against the origin's
+  (a HEAD request) or a published checksum, and its first bytes against the
+  format (`PK` for a ZIP, `%PDF` for a PDF). An unblocker can decode a binary
+  as text and hand back a larger, corrupted file, its replacement characters
+  (bytes `EF BF BD`) scattered through it, while reporting success. A file that
+  needs no unblocking is better fetched directly, and a file behind a login is
+  better captured inside the signed-in browser.
 - **Help-center sites** can return pages of navigation with the article cut
   off; judge by content, never by character count.
 - **Bright Data's own docs** are indexed for agents at
@@ -377,7 +384,9 @@ owner's web-access project. Corrections go to the owner, not into forks.
   through Bright Data and check that the whole file came back.
 - Every earlier version is in the repository's commit history.
 
-*v3.1 — 2026-10-01. Adds the owner's Web Access Gateway, one connector for
+*v3.2 — 2026-10-08. Section 6: verify a binary that came through an
+unblocker before trusting it (size, checksum, first bytes). v3.1
+(2026-10-01) added the owner's Web Access Gateway, one connector for
 both services with the route chosen inside it: how to recognise it (section
 0), its `via` and `next` fields (section 1), its tools on the ladder (section
 3) and its sign-in flow (section 4). v3.0 (2026-09-30) rewrote the file short
